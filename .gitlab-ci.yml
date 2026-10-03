@@ -58,18 +58,32 @@ publish_image:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
 
-deploy_test:
+deploy_server2:
   stage: deploy
 
   tags:
     - server2-deploy
 
   script:
-    - echo "DEPLOY RUNNER TEST"
-    - hostname
-    - whoami
-    - pwd
-    - ip addr show ens33
+    - |
+      echo "$CI_REGISTRY_PASSWORD" | docker login \
+      -u "$CI_REGISTRY_USER" \
+      --password-stdin "$CI_REGISTRY"
+
+    - docker pull "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+
+    - docker rm -f berik-web || true
+
+    - |
+      docker run -d \
+      --name berik-web \
+      --restart unless-stopped \
+      -p 8080:80 \
+      "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+
+    - sleep 3
+    - curl --fail http://127.0.0.1:8080
+    - docker ps --filter name=berik-web
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'

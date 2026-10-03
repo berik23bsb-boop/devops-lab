@@ -99,3 +99,38 @@ deploy_server2:
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
+
+rollback_server2:
+  stage: deploy
+
+  tags:
+    - server2-deploy
+
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    ROLLBACK_TAG: "53cd2321"
+
+  script:
+    - |
+      echo "$CI_REGISTRY_PASSWORD" | docker login \
+      -u "$CI_REGISTRY_USER" \
+      --password-stdin "$CI_REGISTRY"
+
+    - docker pull "$CI_REGISTRY_IMAGE:$ROLLBACK_TAG"
+
+    - docker rm -f berik-web || true
+
+    - |
+      docker run -d \
+      --name berik-web \
+      --restart unless-stopped \
+      -p 8080:80 \
+      "$CI_REGISTRY_IMAGE:$ROLLBACK_TAG"
+
+    - docker ps --filter name=berik-web
+
+  when: manual
+  allow_failure: true
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

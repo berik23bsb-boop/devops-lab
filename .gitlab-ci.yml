@@ -10,6 +10,7 @@ variables:
 
 stages:
   - test
+  - publish
 
 test_website:
   stage: test
@@ -18,14 +19,8 @@ test_website:
     - apk add --no-cache curl
 
   script:
-    - docker version
-
-    - |
-      docker build -t berik-devops-web:test .
-
-    - |
-      docker run -d --name test-web -p 8080:80 berik-devops-web:test
-
+    - docker build -t berik-devops-web:test .
+    - docker run -d --name test-web -p 8080:80 berik-devops-web:test
     - sleep 3
 
     - |
@@ -39,3 +34,25 @@ test_website:
 
   after_script:
     - docker rm -f test-web || true
+
+
+publish_image:
+  stage: publish
+
+  script:
+    - |
+      echo "$CI_REGISTRY_PASSWORD" | docker login \
+      -u "$CI_REGISTRY_USER" \
+      --password-stdin "$CI_REGISTRY"
+
+    - |
+      docker build \
+      -t "$CI_REGISTRY_IMAGE:latest" \
+      -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" \
+      .
+
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

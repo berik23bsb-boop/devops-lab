@@ -1,0 +1,9 @@
+stages:
+  - test
+
+hello_job:
+  stage: test
+  script:
+    - echo "Hello from GitLab CI"
+    - hostname
+    - uname -a

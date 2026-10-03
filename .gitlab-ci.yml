@@ -11,6 +11,7 @@ variables:
 stages:
   - test
   - publish
+  - deploy
 
 test_website:
   stage: test
@@ -53,6 +54,22 @@ publish_image:
 
     - docker push "$CI_REGISTRY_IMAGE:latest"
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+deploy_test:
+  stage: deploy
+
+  tags:
+    - server2-deploy
+
+  script:
+    - echo "DEPLOY RUNNER TEST"
+    - hostname
+    - whoami
+    - pwd
+    - ip addr show ens33
 
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'

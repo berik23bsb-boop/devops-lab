@@ -1,4 +1,4 @@
-name: Simple CI
+name: Docker Website CI
 
 on:
   push:
@@ -6,9 +6,31 @@ on:
       - main
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Show message
-        run: echo "Hello from GitHub Actions"
+      - name: Download repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t berik-devops-web:test .
+
+      - name: Run Docker container
+        run: docker run -d --name test-web -p 8080:80 berik-devops-web:test
+
+      - name: Wait for website
+        run: sleep 3
+
+      - name: Test website
+        run: |
+          curl --fail http://127.0.0.1:8080
+          curl -s http://127.0.0.1:8080 | grep "Berik DevOps Lab"
+          curl -s http://127.0.0.1:8080 | grep "Application status: ONLINE"
+
+      - name: Show running container
+        run: docker ps
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f test-web
